@@ -1,0 +1,17 @@
+#cloud-config
+hostname: ${hostname}
+fqdn: ${hostname}.local
+package_update: true
+package_upgrade: false
+
+packages:
+  - qemu-guest-agent
+
+users:
+  - name: root
+    ssh_authorized_keys: ${jsonencode(ssh_keys)}
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  - sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+  - systemctl restart sshd
