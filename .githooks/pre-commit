@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+exec 1>&2
+
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+  against=HEAD
+else
+  against=4b825dc642cb6eb9a060e54bf8d69288fbee4904
+fi
+
+exit_status=0
+
+is_sensitive_path() {
+  local file="$1"
+
+  case "$file" in
+    *.example|*.example.*|*.sample|*.sample.*)
+      return 1
+      ;;
+    .terraform|.terraform/*|*/.terraform|*/.terraform/*)
+      return 0
+      ;;
+    *.tfvars|*.tfvars.json|*.tfstate|*.tfstate.*|*.tfplan|*.plan)
+      return 0
+      ;;
+    crash.log|crash.*.log|*.private-backup-*|.terraformrc|terraform.rc)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+is_binary_like_path() {
+  local file="$1"
+
+  case "$file" in
+    *.png|*.jpg|*.jpeg|*.gif|*.webp|*.ico|*.pdf|*.zip|*.gz|*.tgz)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+check_symlink_target() {
+  local file="$1"
+  local mode
+  local target
+
+  mode="$(git ls-files -s -- "$file" | awk '{print $1; exit}')"
+  [[ "$mode" == "120000" ]] || return 0
+
+  target="$(git cat-file -p ":$file" 2>/dev/null || true)"
+  case "$target" in
+    /*|*private/secrets*|*homelab-secrets*|*.ssh*)
+      echo "ERROR: symlink target should not be committed: $file -> $target"
+      exit_status=1
+      ;;
+  esac
+}
+
+scan_staged_content() {
+  local file="$1"
+  local matches
+
+  is_binary_like_path "$file" && return 0
+  [[ "$file" == .githooks/* ]] && return 0
+
+  matches="$(
+    git show ":$file" 2>/dev/null \
+      | grep -Ein '(^|[[:space:]])(password|proxmox_token|vm_password|token|secret|api[_-]?key|access[_-]?key|secret[_-]?key|client[_-]?secret)[[:space:]]*=[[:space:]]*"[^"$][^"]*"|(endpoint|url)[[:space:]]*=[[:space:]]*"https?://(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)|terraform-token=[A-Za-z0-9]|PVEAPIToken=|BEGIN [A-Z ]*PRIVATE KEY' \
+      | grep -Eiv 'change-me|example|placeholder|\$\{|var\.' \
+      || true
+  )"
+
+  if [[ -n "$matches" ]]; then
+    echo "ERROR: possible literal secret in staged file: $file"
+    echo "$matches"
+    exit_status=1
+  fi
+}
+
+while IFS= read -r -d $'\0' file; do
+  if is_sensitive_path "$file"; then
+    echo "ERROR: private Terraform file should not be committed: $file"
+    exit_status=1
+    continue
+  fi
+
+  check_symlink_target "$file"
+  scan_staged_content "$file"
+done < <(git diff --cached --diff-filter=ACMR --name-only -z "$against")
+
+exit "$exit_status"

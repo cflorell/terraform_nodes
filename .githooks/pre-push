@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+exec 1>&2
+
+exit_status=0
+
+echo "== git status --short --ignored =="
+git status --short --ignored
+echo
+
+tracked_private_files="$(
+  git ls-files \
+    '*.tfvars' \
+    '*.tfvars.json' \
+    '*.tfstate' \
+    '*.tfstate.*' \
+    '*.tfplan' \
+    '*.plan' \
+    '.terraform' \
+    '*/.terraform/*' \
+    '*.private-backup-*' \
+    '.terraformrc' \
+    'terraform.rc'
+)"
+
+if [[ -n "$tracked_private_files" ]]; then
+  echo "ERROR: private Terraform runtime files are tracked:"
+  echo "$tracked_private_files"
+  exit_status=1
+  echo
+fi
+
+resolve_secrets_dir() {
+  if [[ -n "${HOMELAB_SECRETS_DIR:-}" ]]; then
+    printf '%s\n' "$HOMELAB_SECRETS_DIR"
+    return 0
+  fi
+
+  if [[ -d "../private/secrets" ]]; then
+    printf '%s\n' "../private/secrets"
+    return 0
+  fi
+
+  printf '%s\n' ""
+}
+
+if [[ "${SKIP_PRIVATE_LINK_CHECK:-0}" == "1" ]]; then
+  echo "Skipping private file link check because SKIP_PRIVATE_LINK_CHECK=1"
+else
+  echo "== private file link check =="
+  secrets_dir="$(resolve_secrets_dir)"
+  if [[ -n "$secrets_dir" ]]; then
+    scripts/link-private-files.sh --secrets-dir "$secrets_dir" --check || exit_status=1
+  else
+    scripts/link-private-files.sh --check || exit_status=1
+  fi
+  echo
+fi
+
+if [[ "${SKIP_TERRAFORM_FMT_CHECK:-0}" == "1" ]]; then
+  echo "Skipping Terraform format check because SKIP_TERRAFORM_FMT_CHECK=1"
+else
+  echo "== terraform fmt -check -recursive =="
+  if ! command -v terraform >/dev/null 2>&1; then
+    echo "ERROR: terraform is not installed or not on PATH."
+    echo "To bypass only this check once: SKIP_TERRAFORM_FMT_CHECK=1 git push"
+    exit_status=1
+  else
+    terraform fmt -check -recursive || exit_status=1
+  fi
+fi
+
+exit "$exit_status"

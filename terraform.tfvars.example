@@ -1,0 +1,5 @@
+vm_password       = "change-me"
+proxmox_token     = "change-me"
+proxmox_endpoint  = "https://proxmox.example.com:8006/"
+proxmox2_endpoint = "https://proxmox2.example.com:8006/"
+proxmox3_endpoint = "https://proxmox3.example.com:8006/"
