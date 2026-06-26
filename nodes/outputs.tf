@@ -41,6 +41,16 @@ locals {
       ansible_user = "root"
       ansible_port = 22
     }
+
+    runner = {
+      ansible_host = var.runner_vm_ipv4_address != "dhcp" ? split("/", var.runner_vm_ipv4_address)[0] : flatten([
+        for idx, mac_address in proxmox_virtual_environment_vm.runner.mac_addresses :
+        proxmox_virtual_environment_vm.runner.ipv4_addresses[idx]
+        if lower(mac_address) == lower(local.runner_mac_address)
+      ])[0]
+      ansible_user = "root"
+      ansible_port = 22
+    }
   }
 }
 

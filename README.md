@@ -22,12 +22,26 @@ secrets/
 `terraform.tfvars` contains runtime secrets and private topology values:
 
 ```hcl
-vm_password       = "change-me"
-proxmox_token     = "change-me"
-proxmox_endpoint  = "https://proxmox.example.com:8006/"
-proxmox2_endpoint = "https://proxmox2.example.com:8006/"
-proxmox3_endpoint = "https://proxmox3.example.com:8006/"
+vm_password                       = "change-me"
+vm_ssh_public_keys                = ["ssh-ed25519 AAAA... homelab"]
+runner_vm_cloud_image_url         = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
+runner_vm_cloud_image_file_name   = "debian-12-genericcloud-amd64.qcow2"
+runner_vm_cloud_image_datastore_id = "local"
+runner_vm_datastore_id            = "local-lvm"
+runner_vm_ipv4_address            = "dhcp"
+runner_vm_ipv4_gateway            = ""
+proxmox_token                     = "change-me"
+proxmox_endpoint                  = "https://proxmox.example.com:8006/"
+proxmox2_endpoint                 = "https://proxmox2.example.com:8006/"
+proxmox3_endpoint                 = "https://proxmox3.example.com:8006/"
 ```
+
+The runner VM is created from a Debian cloud image downloaded into Proxmox
+import storage. The image must include cloud-init. Terraform enables the QEMU
+guest agent and uses it to export the runner's DHCP address for Ansible.
+If the image does not include `qemu-guest-agent` before Ansible runs, set
+`runner_vm_ipv4_address` and `runner_vm_ipv4_gateway` so Terraform can export a
+static Ansible address without waiting for the guest agent on first boot.
 
 Then link them into this checkout:
 
