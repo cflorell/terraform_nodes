@@ -2,7 +2,7 @@ locals {
   runner_mac_address = "BC:24:11:52:34:A8"
 }
 
-resource "proxmox_virtual_environment_download_file" "runner_cloud_image" {
+resource "proxmox_download_file" "runner_cloud_image" {
   content_type = "import"
   datastore_id = var.runner_vm_cloud_image_datastore_id
   file_name    = var.runner_vm_cloud_image_file_name
@@ -39,7 +39,13 @@ resource "proxmox_virtual_environment_vm" "runner" {
     timeout = "15m"
     trim    = true
     type    = "virtio"
+      wait_for_ip {
+      # Use ONE of these depending on your provider version:
+      # If using older provider: enabled = var.runner_vm_ipv4_address == "dhcp"     
+      ipv4 = var.runner_vm_ipv4_address == "dhcp"
   }
+  }
+
 
   cpu {
     cores      = 4
@@ -58,7 +64,7 @@ resource "proxmox_virtual_environment_vm" "runner" {
     datastore_id = var.runner_vm_datastore_id
     discard      = "on"
     file_format  = "raw"
-    import_from  = proxmox_virtual_environment_download_file.runner_cloud_image.id
+    import_from  = proxmox_download_file.runner_cloud_image.id
     interface    = "scsi0"
     iothread     = false
     queues       = 0
@@ -87,6 +93,7 @@ resource "proxmox_virtual_environment_vm" "runner" {
         address = "auto"
       }
     }
+
 
     user_account {
       keys     = var.vm_ssh_public_keys
@@ -122,11 +129,6 @@ resource "proxmox_virtual_environment_vm" "runner" {
 
   serial_device {
     device = "socket"
-  }
-
-  wait_for_ip {
-    disabled = var.runner_vm_ipv4_address != "dhcp"
-    ipv4     = var.runner_vm_ipv4_address == "dhcp"
   }
 
   lifecycle {
