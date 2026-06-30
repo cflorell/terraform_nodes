@@ -39,11 +39,11 @@ resource "proxmox_virtual_environment_vm" "runner" {
     timeout = "15m"
     trim    = true
     type    = "virtio"
-      wait_for_ip {
+    wait_for_ip {
       # Use ONE of these depending on your provider version:
       # If using older provider: enabled = var.runner_vm_ipv4_address == "dhcp"     
       ipv4 = var.runner_vm_ipv4_address == "dhcp"
-  }
+    }
   }
 
 

@@ -46,8 +46,49 @@ variable "runner_vm_ipv4_gateway" {
   default     = ""
 }
 
-variable "proxmox_token" {
-  description = "Proxmox api token"
+variable "kubernetes_vm_cloud_image_url" {
+  description = "Debian 13 cloud image URL used to create Kubernetes VM disks."
+  type        = string
+  default     = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
+}
+
+variable "kubernetes_vm_cloud_image_file_name" {
+  description = "File name to use for the Kubernetes VM cloud image in Proxmox import storage."
+  type        = string
+  default     = "debian-13-genericcloud-amd64.qcow2"
+}
+
+variable "kubernetes_vm_cloud_image_datastore_id" {
+  description = "Proxmox datastore used to store the downloaded Kubernetes cloud image."
+  type        = string
+  default     = "local"
+}
+
+variable "kubernetes_vm_datastore_id" {
+  description = "Proxmox datastore for Kubernetes VM disks and cloud-init disks."
+  type        = string
+  default     = "local-lvm"
+}
+
+variable "kubernetes_vm_ipv4_addresses" {
+  description = "Kubernetes VM IPv4 addresses in CIDR notation keyed by hostname, or dhcp."
+  type        = map(string)
+  default = {
+    kubernetes-control = "dhcp"
+    kubernetes-node1   = "dhcp"
+    kubernetes-node2   = "dhcp"
+    kubernetes-node3   = "dhcp"
+  }
+}
+
+variable "kubernetes_vm_ipv4_gateway" {
+  description = "Kubernetes VM IPv4 gateway. Leave empty when Kubernetes VM addresses are dhcp."
+  type        = string
+  default     = ""
+}
+
+variable "proxmox_password" {
+  description = "Proxmox password"
   type        = string
   sensitive   = true
 }
@@ -68,4 +109,10 @@ variable "proxmox3_endpoint" {
   description = "Tertiary Proxmox API endpoint URL"
   type        = string
   sensitive   = true
+}
+
+variable "kubernetes_lxc_template_file_id" {
+    description = "Debian 13 lxc template"
+    type        = string
+    default     = "local:vztmpl/debian-13-standard_13.1-2_amd64.tar.zst"
 }

@@ -1,14 +1,20 @@
 module "nodes" {
   source = "./nodes"
 
-  vm_password                        = var.vm_password
-  vm_ssh_public_keys                 = var.vm_ssh_public_keys
-  runner_vm_cloud_image_url          = var.runner_vm_cloud_image_url
-  runner_vm_cloud_image_file_name    = var.runner_vm_cloud_image_file_name
-  runner_vm_cloud_image_datastore_id = var.runner_vm_cloud_image_datastore_id
-  runner_vm_datastore_id             = var.runner_vm_datastore_id
-  runner_vm_ipv4_address             = var.runner_vm_ipv4_address
-  runner_vm_ipv4_gateway             = var.runner_vm_ipv4_gateway
+  vm_password                            = var.vm_password
+  vm_ssh_public_keys                     = var.vm_ssh_public_keys
+  runner_vm_cloud_image_url              = var.runner_vm_cloud_image_url
+  runner_vm_cloud_image_file_name        = var.runner_vm_cloud_image_file_name
+  runner_vm_cloud_image_datastore_id     = var.runner_vm_cloud_image_datastore_id
+  runner_vm_datastore_id                 = var.runner_vm_datastore_id
+  runner_vm_ipv4_address                 = var.runner_vm_ipv4_address
+  runner_vm_ipv4_gateway                 = var.runner_vm_ipv4_gateway
+  kubernetes_vm_cloud_image_url          = var.kubernetes_vm_cloud_image_url
+  kubernetes_vm_cloud_image_file_name    = var.kubernetes_vm_cloud_image_file_name
+  kubernetes_vm_cloud_image_datastore_id = var.kubernetes_vm_cloud_image_datastore_id
+  kubernetes_vm_datastore_id             = var.kubernetes_vm_datastore_id
+  kubernetes_vm_ipv4_addresses           = var.kubernetes_vm_ipv4_addresses
+  kubernetes_vm_ipv4_gateway             = var.kubernetes_vm_ipv4_gateway
 
   providers = {
     proxmox = proxmox

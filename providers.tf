@@ -8,21 +8,24 @@ terraform {
 }
 
 provider "proxmox" {
-  endpoint  = var.proxmox_endpoint
-  api_token = "terraform@pve!terraform-token=${var.proxmox_token}"
-  insecure  = true
+  endpoint = var.proxmox_endpoint
+  username = "root@pam"
+  password = var.proxmox_password
+  insecure = true
 }
 
 provider "proxmox" {
-  alias     = "proxmox2"
-  endpoint  = var.proxmox2_endpoint
-  api_token = "terraform@pve!terraform-token=${var.proxmox_token}"
-  insecure  = true
+  alias    = "proxmox2"
+  endpoint = var.proxmox2_endpoint
+  username = "root@pam"
+  password = var.proxmox_password
+  insecure = true
 }
 
 provider "proxmox" {
-  alias     = "proxmox3"
-  endpoint  = var.proxmox3_endpoint
-  api_token = "terraform@pve!terraform-token=${var.proxmox_token}"
-  insecure  = true
+  alias    = "proxmox3"
+  endpoint = var.proxmox3_endpoint
+  username = "root@pam"
+  password = var.proxmox_password
+  insecure = true
 }
