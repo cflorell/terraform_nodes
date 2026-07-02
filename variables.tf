@@ -110,9 +110,3 @@ variable "proxmox3_endpoint" {
   type        = string
   sensitive   = true
 }
-
-variable "kubernetes_lxc_template_file_id" {
-    description = "Debian 13 lxc template"
-    type        = string
-    default     = "local:vztmpl/debian-13-standard_13.1-2_amd64.tar.zst"
-}
