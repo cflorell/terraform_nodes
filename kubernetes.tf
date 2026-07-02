@@ -44,12 +44,12 @@ resource "proxmox_virtual_environment_file" "cloud_init_user_data" {
   datastore_id = "local"
   content_type = "snippets"
 
-source_raw {
+  source_raw {
     data = templatefile("${path.module}/user-data.yaml", {
       hostname = each.key
       ssh_keys = var.vm_ssh_public_keys
     })
-    file_name = "cloud-init-${each.key}.yaml" 
+    file_name = "cloud-init-${each.key}.yaml"
   }
 }
 

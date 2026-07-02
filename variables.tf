@@ -87,6 +87,12 @@ variable "kubernetes_vm_ipv4_gateway" {
   default     = ""
 }
 
+variable "kubernetes_lxc_template_file_id" {
+  description = "Template file ID reserved for Kubernetes LXC nodes."
+  type        = string
+  default     = null
+}
+
 variable "proxmox_password" {
   description = "Proxmox password"
   type        = string

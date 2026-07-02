@@ -62,6 +62,13 @@ scripts/link-private-files.sh --adopt
 scripts/link-private-files.sh --check
 ```
 
+Run Terraform from the repository root:
+
+```bash
+terraform init
+terraform plan
+```
+
 ## Git hooks
 
 Install the project hooks in this checkout:
