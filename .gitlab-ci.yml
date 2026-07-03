@@ -10,12 +10,32 @@ include:
 
 variables:
   SECRET_DETECTION_ENABLED: 'true'
+  TRIVY_CACHE_DIR: .trivycache
 
 sast:
   stage: test
 
 secret_detection:
   stage: secret-detection
+
+trivy-iac:
+  stage: test
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  cache:
+    key: trivy-cache
+    paths:
+      - .trivycache/
+  script:
+    - trivy --version
+    - trivy config --format json --output trivy-iac-report.json .
+    - trivy config --format table --exit-code 1 .
+  artifacts:
+    when: always
+    paths:
+      - trivy-iac-report.json
+    expire_in: 1 week
 
 
 parse-sast-results:
