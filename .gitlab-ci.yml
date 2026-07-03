@@ -18,6 +18,19 @@ sast:
 secret_detection:
   stage: secret-detection
 
+trufflehog:
+  stage: secret-detection
+  image:
+    name: trufflesecurity/trufflehog:latest
+    entrypoint: [""]
+  script:
+    - trufflehog git file://. --fail --json > trufflehog-report.json
+  artifacts:
+    when: always
+    paths:
+      - trufflehog-report.json
+    expire_in: 1 week
+
 trivy-iac:
   stage: test
   image:
