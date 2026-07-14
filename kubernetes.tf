@@ -59,6 +59,7 @@ resource "proxmox_download_file" "kubernetes_cloud_image" {
   file_name    = var.kubernetes_vm_cloud_image_file_name
   node_name    = "proxmox3"
   url          = var.kubernetes_vm_cloud_image_url
+  overwrite    = false
 }
 
 resource "proxmox_virtual_environment_vm" "kubernetes" {

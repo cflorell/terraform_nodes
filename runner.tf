@@ -8,6 +8,7 @@ resource "proxmox_download_file" "runner_cloud_image" {
   file_name    = var.runner_vm_cloud_image_file_name
   node_name    = "proxmox"
   url          = var.runner_vm_cloud_image_url
+  overwrite    = false
 }
 
 resource "proxmox_virtual_environment_vm" "runner" {
@@ -103,7 +104,7 @@ resource "proxmox_virtual_environment_vm" "runner" {
   }
 
   memory {
-    dedicated      = 8192
+    dedicated      = 4096
     floating       = 0
     keep_hugepages = false
     shared         = 0
