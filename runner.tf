@@ -70,7 +70,7 @@ resource "proxmox_virtual_environment_vm" "runner" {
     iothread     = false
     queues       = 0
     replicate    = true
-    size         = 64
+    size         = 128
     ssd          = false
   }
 
