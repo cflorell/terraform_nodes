@@ -1,4 +1,10 @@
 terraform {
+  required_version = ">= 1.6.0"
+
+  # GitLab-managed remote state; configure with `terraform init -backend-config=backend.hcl`
+  # (see README "Remote state") or TF_HTTP_* environment variables in CI.
+  backend "http" {}
+
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"

@@ -62,6 +62,49 @@ scripts/link-private-files.sh --adopt
 scripts/link-private-files.sh --check
 ```
 
+## Remote state (GitLab-managed)
+
+State is stored in GitLab's managed Terraform state (project sidebar:
+**Operate → Terraform states**), not in the repository. Even though the
+repository is public, state is only readable by project members (Developer
+role and up) over an authenticated API — it is never exposed on the public
+project pages. GitLab versions the state and provides locking.
+
+### One-time migration from local state
+
+```bash
+cp backend.hcl.example backend.hcl   # gitignored; fill in project ID, username, PAT (api scope)
+terraform init -migrate-state -backend-config=backend.hcl
+```
+
+Answer `yes` when Terraform offers to copy the existing local state. Afterwards
+the local `terraform.tfstate` symlink is obsolete; keep the file in the private
+secrets repo as a backup or delete it once the remote state is verified with
+`terraform plan` (expect no changes).
+
+### Day-to-day local use
+
+`terraform init -backend-config=backend.hcl` once per fresh checkout; plan and
+apply work as before. `backend.hcl` contains an access token, so treat it like
+`terraform.tfvars` — it is gitignored and can live in the private secrets repo.
+
+### CI (merge request plan, manual apply)
+
+- `terraform_validate` — fmt + validate on every MR, on shared runners.
+- `terraform_plan` — full plan on every MR, on the self-hosted runner (it can
+  reach the Proxmox endpoints); the MR widget shows the resource change counts.
+- `terraform_apply` — manual job on `main`.
+
+Required setup in GitLab (**Settings → CI/CD → Variables**):
+
+- `HOMELAB_TFVARS` — type **File**, contents of the real `terraform.tfvars`.
+  Do not mark it protected, or MR pipelines will not receive it.
+
+The self-hosted runner needs `terraform` and `jq` installed. Because the
+project is public, restrict pipeline and job-log visibility to project members
+(**Settings → CI/CD → General pipelines**), since plan output prints resource
+details.
+
 ## Git hooks
 
 Install the project hooks in this checkout:

@@ -1,7 +1,10 @@
 stages:
   - secret-detection
+  - validate
   - test
   - post-test
+  - plan
+  - apply
 
 include:
   - template: Security/SAST.gitlab-ci.yml
@@ -71,3 +74,71 @@ parse-sast-results:
       else
         echo "gl-sast-report.json not found."
       fi
+
+# --- Terraform remote state + plan/apply -------------------------------------
+# State lives in GitLab's managed Terraform state (Operate > Terraform states),
+# accessed here with the ephemeral CI job token. HOMELAB_TFVARS is a file-type
+# CI/CD variable holding the real terraform.tfvars content.
+
+.terraform_remote_state:
+  variables:
+    TF_STATE_NAME: homelab
+    TF_HTTP_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}
+    TF_HTTP_LOCK_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}/lock
+    TF_HTTP_UNLOCK_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}/lock
+    TF_HTTP_LOCK_METHOD: POST
+    TF_HTTP_UNLOCK_METHOD: DELETE
+    TF_HTTP_USERNAME: gitlab-ci-token
+    TF_HTTP_PASSWORD: ${CI_JOB_TOKEN}
+    TF_HTTP_RETRY_WAIT_MIN: "5"
+    TF_IN_AUTOMATION: "true"
+    TF_INPUT: "false"
+
+terraform_validate:
+  stage: validate
+  image:
+    name: hashicorp/terraform:1.12
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - terraform fmt -check -recursive -diff
+    - terraform init -backend=false
+    - terraform validate
+
+# Runs on the self-hosted runner: it needs network access to the Proxmox
+# endpoints plus local terraform and jq binaries.
+terraform_plan:
+  stage: plan
+  extends: .terraform_remote_state
+  tags:
+    - ansible
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+      allow_failure: true
+  script:
+    - terraform version
+    - terraform init
+    - terraform plan -lock=false -var-file="$HOMELAB_TFVARS" -out=homelab.tfplan
+    - |
+      terraform show -json homelab.tfplan | jq -r '([.resource_changes[]?.change.actions?] | flatten) | {create: (map(select(.=="create")) | length), update: (map(select(.=="update")) | length), delete: (map(select(.=="delete")) | length)}' > tfplan.json
+  artifacts:
+    reports:
+      terraform: tfplan.json
+
+terraform_apply:
+  stage: apply
+  extends: .terraform_remote_state
+  tags:
+    - ansible
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  script:
+    - terraform init
+    - terraform apply -auto-approve -var-file="$HOMELAB_TFVARS"
+  environment:
+    name: homelab
