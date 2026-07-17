@@ -1,0 +1,15 @@
+# GitLab HTTP backend configuration for local terraform runs.
+# Copy to backend.hcl (gitignored, or keep it in the private secrets repo),
+# fill in the values, then run: terraform init -backend-config=backend.hcl
+#
+# PROJECT_ID: numeric project ID shown on the GitLab project page.
+# password:   personal access token with the `api` scope.
+
+address        = "https://gitlab.com/api/v4/projects/<PROJECT_ID>/terraform/state/homelab"
+lock_address   = "https://gitlab.com/api/v4/projects/<PROJECT_ID>/terraform/state/homelab/lock"
+unlock_address = "https://gitlab.com/api/v4/projects/<PROJECT_ID>/terraform/state/homelab/lock"
+username       = "<gitlab-username>"
+password       = "<personal-access-token>"
+lock_method    = "POST"
+unlock_method  = "DELETE"
+retry_wait_min = 5

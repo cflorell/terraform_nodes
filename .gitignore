@@ -15,6 +15,12 @@
 *.tfvars
 *.tfvars.json
 
+# Remote state backend config contains an access token
+backend.hcl
+
+# CI plan summary
+tfplan.json
+
 # Local override files
 override.tf
 override.tf.json
