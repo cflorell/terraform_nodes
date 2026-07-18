@@ -97,7 +97,7 @@ parse-sast-results:
 terraform_validate:
   stage: validate
   image:
-    name: hashicorp/terraform:1.12
+    name: hashicorp/terraform:1.15
     entrypoint: [""]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
