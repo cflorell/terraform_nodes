@@ -21,7 +21,6 @@ Private repo layout:
   secrets/
     terraform_nodes/
       terraform.tfvars
-      terraform.tfstate
 
 Examples:
   HOMELAB_SECRETS_DIR=../private/secrets scripts/link-private-files.sh --adopt
@@ -131,7 +130,7 @@ elif [[ -d "$secrets_dir/$repo_name" ]]; then
   secrets_project_dir="$secrets_dir/$repo_name"
 elif [[ -d "$secrets_dir/$legacy_repo_name" ]]; then
   secrets_project_dir="$secrets_dir/$legacy_repo_name"
-elif [[ -e "$secrets_dir/terraform.tfvars" || -e "$secrets_dir/terraform.tfstate" ]]; then
+elif [[ -e "$secrets_dir/terraform.tfvars" ]]; then
   secrets_project_dir="$secrets_dir"
 else
   secrets_project_dir="$secrets_dir/$normalized_repo_name"
@@ -139,7 +138,6 @@ fi
 
 private_files=(
   "terraform.tfvars"
-  "terraform.tfstate"
 )
 
 run() {

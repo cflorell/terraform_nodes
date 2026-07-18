@@ -16,8 +16,6 @@ tracked_private_files="$(
   git ls-files \
     '*.tfvars' \
     '*.tfvars.json' \
-    '*.tfstate' \
-    '*.tfstate.*' \
     '*.tfplan' \
     '*.plan' \
     '.terraform' \
