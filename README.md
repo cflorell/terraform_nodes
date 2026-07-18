@@ -1,6 +1,6 @@
 # Terraform Nodes
 
-Terraform configuration for my Proxmox-managed homelab nodes.
+Terraform configuration for a Proxmox-managed homelab's nodes.
 
 ## Setup
 
@@ -23,7 +23,7 @@ secrets/
 
 ```hcl
 vm_password                            = "change-me"
-vm_ssh_public_keys                     = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexample"]
+vm_ssh_public_keys                     = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexample", "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIrunnerexample"]
 runner_vm_cloud_image_url              = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
 runner_vm_cloud_image_file_name        = "debian-12-genericcloud-amd64.qcow2"
 runner_vm_cloud_image_datastore_id     = "local"
@@ -46,6 +46,11 @@ proxmox_endpoint           = "https://proxmox.example.com:8006/"
 proxmox2_endpoint          = "https://proxmox2.example.com:8006/"
 proxmox3_endpoint          = "https://proxmox3.example.com:8006/"
 ```
+
+`vm_ssh_public_keys` is shared by every `proxmox_virtual_environment_vm`
+resource's cloud-init (`runner.tf`'s `user_account.keys`, `kubernetes.tf`'s
+`user-data.yaml` template) - it's meant to hold every key that should have
+root access from first boot, not just a personal one.
 
 The runner and Kubernetes VMs are created from Debian cloud images downloaded
 into Proxmox import storage. The images must include cloud-init. Terraform
@@ -113,7 +118,7 @@ Install the project hooks in this checkout:
 git config core.hooksPath .githooks
 ```
 
-The hooks are local to your clone. They are versioned in this repository, but
+The hooks are local to each clone. They are versioned in this repository, but
 Git will not use them until `core.hooksPath` is configured.
 
 `pre-commit` blocks accidental commits of Terraform runtime/private files such
@@ -129,7 +134,7 @@ literal secret assignments.
 - Fails if Terraform runtime/private files are tracked.
 - Runs `terraform fmt -check -recursive`.
 
-If your private secrets repository is not at `../private/secrets`, set:
+If the private secrets repository is not at `../private/secrets`, set:
 
 ```bash
 export HOMELAB_SECRETS_DIR="$HOME/git_private/homelab-secrets"
