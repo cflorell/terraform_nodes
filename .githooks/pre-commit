@@ -24,7 +24,10 @@ is_sensitive_path() {
     .terraform|.terraform/*|*/.terraform|*/.terraform/*)
       return 0
       ;;
-    *.tfvars|*.tfvars.json|*.tfplan|*.plan)
+    *.tfvars|*.tfvars.json|*.tfvars.sops|*.tfplan|*.plan)
+      return 0
+      ;;
+    backend.hcl|backend.hcl.sops)
       return 0
       ;;
     crash.log|crash.*.log|*.private-backup-*|.terraformrc|terraform.rc)

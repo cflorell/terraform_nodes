@@ -77,8 +77,10 @@ parse-sast-results:
 
 # --- Terraform remote state + plan/apply -------------------------------------
 # State lives in GitLab's managed Terraform state (Operate > Terraform states),
-# accessed here with the ephemeral CI job token. HOMELAB_TFVARS is a file-type
-# CI/CD variable holding the real terraform.tfvars content.
+# accessed here with the ephemeral CI job token. terraform.tfvars itself comes
+# from the private secrets repo: it's cloned with the job token, symlinked in
+# via scripts/link-private-files.sh, then decrypted from its SOPS/age-encrypted
+# form with scripts/decrypt-private-files.sh (see .tfvars_setup below).
 
 .terraform_remote_state:
   variables:
@@ -93,6 +95,16 @@ parse-sast-results:
     TF_HTTP_RETRY_WAIT_MIN: "5"
     TF_IN_AUTOMATION: "true"
     TF_INPUT: "false"
+
+# Shared by terraform_plan/terraform_apply: clones the private secrets repo
+# with the job token, links terraform.tfvars.sops in via
+# link-private-files.sh, then decrypts it with sops (needs SOPS_AGE_KEY set
+# as a masked CI/CD variable) into a plaintext terraform.tfvars for the job.
+.tfvars_setup:
+  before_script:
+    - git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/cf_homelab/secrets.git"
+    - ./scripts/link-private-files.sh --secrets-dir secrets
+    - ./scripts/decrypt-private-files.sh
 
 terraform_validate:
   stage: validate
@@ -111,7 +123,9 @@ terraform_validate:
 # endpoints plus local terraform and jq binaries.
 terraform_plan:
   stage: plan
-  extends: .terraform_remote_state
+  extends:
+    - .terraform_remote_state
+    - .tfvars_setup
   tags:
     - ansible
   rules:
@@ -122,7 +136,7 @@ terraform_plan:
   script:
     - terraform version
     - terraform init
-    - terraform plan -lock=false -var-file="$HOMELAB_TFVARS" -out=homelab.tfplan
+    - terraform plan -lock=false -var-file="terraform.tfvars" -out=homelab.tfplan
     - |
       terraform show -json homelab.tfplan | jq -r '([.resource_changes[]?.change.actions?] | flatten) | {create: (map(select(.=="create")) | length), update: (map(select(.=="update")) | length), delete: (map(select(.=="delete")) | length)}' > tfplan.json
   artifacts:
@@ -131,7 +145,9 @@ terraform_plan:
 
 terraform_apply:
   stage: apply
-  extends: .terraform_remote_state
+  extends:
+    - .terraform_remote_state
+    - .tfvars_setup
   tags:
     - ansible
   rules:
@@ -139,6 +155,6 @@ terraform_apply:
       when: manual
   script:
     - terraform init
-    - terraform apply -auto-approve -var-file="$HOMELAB_TFVARS"
+    - terraform apply -auto-approve -var-file="terraform.tfvars"
   environment:
     name: homelab

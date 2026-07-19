@@ -15,8 +15,12 @@
 *.tfvars
 *.tfvars.json
 
+# SOPS-encrypted tfvars, linked in from the private secrets repo
+*.tfvars.sops
+
 # Remote state backend config contains an access token
 backend.hcl
+backend.hcl.sops
 
 # CI plan summary
 tfplan.json
