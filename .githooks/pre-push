@@ -16,8 +16,11 @@ tracked_private_files="$(
   git ls-files \
     '*.tfvars' \
     '*.tfvars.json' \
+    '*.tfvars.sops' \
     '*.tfplan' \
     '*.plan' \
+    'backend.hcl' \
+    'backend.hcl.sops' \
     '.terraform' \
     '*/.terraform/*' \
     '*.private-backup-*' \
