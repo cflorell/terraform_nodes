@@ -23,17 +23,21 @@ resource "proxmox_virtual_environment_vm" "runner" {
   name                                 = "runner"
   node_name                            = "proxmox"
   on_boot                              = true
-  protection                           = false
+  protection                           = true
   purge_on_destroy                     = true
   reboot                               = false
-  reboot_after_update                  = true
-  scsi_hardware                        = "virtio-scsi-pci"
-  started                              = true
-  stop_on_destroy                      = false
-  tablet_device                        = true
-  tags                                 = []
-  template                             = false
-  vm_id                                = 108
+  # This VM runs the CI/CD pipeline that applies this state, so it must never
+  # reboot itself as a side effect of an in-place update (e.g. the SSH-key
+  # change that left it powered off after an interrupted apply). Terraform
+  # will warn instead of rebooting; schedule any needed reboot manually.
+  reboot_after_update = false
+  scsi_hardware       = "virtio-scsi-pci"
+  started             = true
+  stop_on_destroy     = false
+  tablet_device       = true
+  tags                = []
+  template            = false
+  vm_id               = 108
 
   agent {
     enabled = true
