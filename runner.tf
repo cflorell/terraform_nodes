@@ -53,7 +53,7 @@ resource "proxmox_virtual_environment_vm" "runner" {
 
 
   cpu {
-    cores      = 4
+    cores      = 6
     flags      = []
     hotplugged = 0
     limit      = 0
@@ -108,7 +108,7 @@ resource "proxmox_virtual_environment_vm" "runner" {
   }
 
   memory {
-    dedicated      = 4096
+    dedicated      = 8192
     floating       = 0
     keep_hugepages = false
     shared         = 0

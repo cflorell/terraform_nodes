@@ -147,8 +147,6 @@ terraform_plan:
       changes: *terraform_changes
     - if: $CI_COMMIT_BRANCH == "main"
       changes: *terraform_changes
-      when: manual
-      allow_failure: true
   script:
     - terraform version
     - terraform init
