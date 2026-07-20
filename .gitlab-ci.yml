@@ -15,6 +15,18 @@ variables:
   SECRET_DETECTION_ENABLED: 'true'
   TRIVY_CACHE_DIR: .trivycache
 
+# Files that actually affect `terraform plan`/`apply` output. Referenced via
+# YAML anchor from terraform_validate/plan/apply's rules so those jobs (and
+# terraform_apply's manual gate) aren't created at all for commits that don't
+# touch them (e.g. docs-only changes) - keeps the pipeline (and its badge)
+# green instead of parked on "manual".
+.terraform_changes: &terraform_changes
+  - "*.tf"
+  - "*.tfvars.example"
+  - ".terraform.lock.hcl"
+  - "user-data.yaml"
+  - "scripts/**/*"
+
 sast:
   stage: test
 
@@ -113,7 +125,9 @@ terraform_validate:
     entrypoint: [""]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *terraform_changes
     - if: $CI_COMMIT_BRANCH == "main"
+      changes: *terraform_changes
   script:
     - terraform fmt -check -recursive -diff
     - terraform init -backend=false
@@ -130,7 +144,9 @@ terraform_plan:
     - ansible
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *terraform_changes
     - if: $CI_COMMIT_BRANCH == "main"
+      changes: *terraform_changes
       when: manual
       allow_failure: true
   script:
@@ -153,6 +169,7 @@ terraform_apply:
     - ansible
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+      changes: *terraform_changes
       when: manual
   script:
     - terraform init
