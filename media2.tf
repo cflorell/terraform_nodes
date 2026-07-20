@@ -1,7 +1,7 @@
 resource "proxmox_virtual_environment_container" "media2" {
   description           = ""
   environment_variables = {}
-  node_name             = "proxmox"
+  node_name             = "proxmox2"
   protection            = false
   start_on_boot         = true
   started               = true
