@@ -142,6 +142,7 @@ terraform_plan:
   artifacts:
     reports:
       terraform: tfplan.json
+    expire_in: 1 week
 
 terraform_apply:
   stage: apply
