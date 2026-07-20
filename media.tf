@@ -1,14 +1,14 @@
 resource "proxmox_virtual_environment_container" "media" {
   description           = " USB passthrough\n"
   environment_variables = {}
-  node_name             = "proxmox"
+  node_name             = "proxmox2"
   protection            = false
   start_on_boot         = true
   started               = true
   tags                  = []
   template              = false
   unprivileged          = false
-  vm_id                 = 104
+  vm_id                 = 109
 
   console {
     enabled   = true
