@@ -1,13 +1,21 @@
-vm_password                             = "change-me"
-vm_ssh_public_keys                      = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexample"]
-runner_vm_cloud_image_url               = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
-runner_vm_cloud_image_file_name         = "debian-12-genericcloud-amd64.qcow2"
-runner_vm_cloud_image_datastore_id      = "local"
-runner_vm_datastore_id                  = "local-lvm"
-runner_vm_ipv4_address                  = "dhcp"
-runner_vm_ipv4_gateway                  = ""
-kubernetes_vm_cloud_image_url           = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
-kubernetes_vm_cloud_image_file_name     = "debian-13-genericcloud-amd64.qcow2"
+vm_password = "change-me"
+# Personal key(s) plus both GitLab runners' public keys, so new VMs/LXCs
+# trust CI from first boot instead of needing a follow-up ansible run
+# before ansible_check/apply can reach them (see the variable description
+# in variables.tf).
+vm_ssh_public_keys = [
+  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexample",              # personal
+  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexample-shell-runner", # runner VM
+  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexample-k8s-runner",   # kube-control
+]
+runner_vm_cloud_image_url              = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
+runner_vm_cloud_image_file_name        = "debian-12-genericcloud-amd64.qcow2"
+runner_vm_cloud_image_datastore_id     = "local"
+runner_vm_datastore_id                 = "local-lvm"
+runner_vm_ipv4_address                 = "dhcp"
+runner_vm_ipv4_gateway                 = ""
+kubernetes_vm_cloud_image_url          = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
+kubernetes_vm_cloud_image_file_name    = "debian-13-genericcloud-amd64.qcow2"
 kubernetes_vm_cloud_image_datastore_id = "local"
 kubernetes_vm_datastore_id             = "local-lvm"
 kubernetes_vm_ipv4_addresses = {

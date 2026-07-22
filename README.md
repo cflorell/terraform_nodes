@@ -55,6 +55,12 @@ resource's cloud-init (`runner.tf`'s `user_account.keys`, `kubernetes.tf`'s
 `user-data.yaml` template) - it's meant to hold every key that should have
 root access from first boot, not just a personal one.
 
+Public keys are fetched with
+```bash
+ssh root@<runner-vm> cat /home/gitlab-runner/.ssh/id_ed25519.pub
+ssh root@<kube-control> cat /etc/kubernetes/gitlab-runner-k8s-ssh/id_ed25519.pub
+```
+
 The runner and Kubernetes VMs are created from Debian cloud images downloaded
 into Proxmox import storage. The images must include cloud-init. Terraform
 enables the QEMU guest agent and uses it to export DHCP addresses for Ansible.

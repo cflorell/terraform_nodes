@@ -5,7 +5,10 @@ variable "vm_password" {
 }
 
 variable "vm_ssh_public_keys" {
-  description = "SSH public keys to install for Terraform-created VM root users."
+  description = <<-EOT
+    SSH public keys to install for Terraform-created VM root users,
+    including my own workstation, shell- and kubernetes runners.
+  EOT
   type        = list(string)
   default     = []
 }

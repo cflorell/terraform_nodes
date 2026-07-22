@@ -186,6 +186,11 @@ resource "proxmox_virtual_environment_vm" "kubernetes" {
 
   lifecycle {
     # The provider does not round-trip these imported/default fields cleanly.
+    #
+    # initialization[0].user_data_file_id is separate: cloud-init only reads
+    # this snippet at first boot, so re-pointing an already-running VM at a
+    # newer rendered file (e.g. after vm_ssh_public_keys changes) achieves
+    # nothing except forcing the provider to destroy and recreate the VM
     ignore_changes = [
       timeout_clone,
       timeout_create,
@@ -195,6 +200,7 @@ resource "proxmox_virtual_environment_vm" "kubernetes" {
       timeout_start_vm,
       timeout_stop_vm,
       vm_id,
+      initialization[0].user_data_file_id,
     ]
 
     prevent_destroy = false
