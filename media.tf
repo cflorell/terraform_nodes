@@ -8,7 +8,7 @@ resource "proxmox_virtual_environment_container" "media" {
   tags                  = []
   template              = false
   unprivileged          = false
-  vm_id                 = 109
+  vm_id                 = 104
 
   console {
     enabled   = true
