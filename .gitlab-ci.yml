@@ -11,6 +11,11 @@ include:
   - template: Security/SAST-IaC.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
 
+# Default to run on k8s runner instead of GitLab.com shared runners.
+default:
+  tags:
+    - k8s
+
 variables:
   SECRET_DETECTION_ENABLED: 'true'
   TRIVY_CACHE_DIR: .trivycache
