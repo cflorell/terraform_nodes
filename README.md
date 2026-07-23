@@ -4,16 +4,22 @@ Terraform configuration for a Proxmox-managed homelab's nodes.
 
 ## Setup
 
-Copy or symlink private runtime files before running Terraform:
+Terraform reads plaintext `terraform.tfvars` and `backend.hcl` at runtime, but
+neither is kept in plaintext at rest. Both live in a separate private repo with
+a mirrored project directory, encrypted with SOPS/age as
+`terraform.tfvars.sops`/`backend.hcl.sops` (whole-file binary encryption, since
+neither format is YAML/JSON). The `.sops` files are linked into this checkout
+and decrypted locally to the gitignored plaintext files (see below); the
+plaintext is never committed.
+
+Without access to the private repo, seed a local `terraform.tfvars` from the
+committed template instead and fill it in by hand:
 
 ```bash
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-For the private-repo workflow, store real private files in a separate private repo with a mirrored project directory. `terraform.tfvars` and `backend.hcl` are
-kept there as SOPS/age-encrypted `terraform.tfvars.sops`/`backend.hcl.sops`
-(whole-file binary encryption, since neither format is YAML/JSON) rather than
-in plaintext:
+The private repo layout is:
 
 ```text
 secrets/
@@ -89,13 +95,26 @@ sops edit --input-type binary --output-type binary backend.hcl.sops
 scripts/decrypt-private-files.sh
 ```
 
+## Provider TLS (Proxmox `insecure`)
+
+The `proxmox` provider blocks in `providers.tf` set `insecure = false` and use
+FQDN endpoints (`proxmox<N>.<domain>:8006`), so Terraform verifies each
+hypervisor's Let's Encrypt certificate. Those certs are issued and renewed by
+`ansible_nodes` (Proxmox-native ACME over Porkbun DNS-01), and the FQDNs resolve
+via OPNsense Unbound overrides so both local runs and the in-cluster CI job can
+reach them by name.
+
+How the certs are issued, the DNS requirement, and how to
+enable a new host or **disable PKI and revert to self-signed**, lives in the
+`ansible_nodes` README ("PKI / TLS certificates").  In short,
+to make Terraform tolerate a self-signed cert again on a host: set its block back
+to `insecure = true` (and optionally revert its `*_endpoint` in `terraform.tfvars`
+to an IP), then `terraform apply`.
+
 ## Remote state (GitLab-managed)
 
 State is stored in GitLab's managed Terraform state (project sidebar:
-**Operate → Terraform states**), not in the repository. Even though the
-repository is public, state is only readable by project members (Developer
-role and up) over an authenticated API — it is never exposed on the public
-project pages. GitLab versions the state and provides locking.
+**Operate → Terraform states**), not in the repository.
 
 ### One-time migration from local state
 
@@ -119,22 +138,22 @@ scripts/link-private-files.sh --adopt
 
 `terraform init -backend-config=backend.hcl` once per fresh checkout; plan and
 apply work as before. `backend.hcl` contains an access token, so it's handled
-the same way as `terraform.tfvars` — linked in from the private secrets repo
+the same way as `terraform.tfvars`, linked in from the private secrets repo
 as SOPS/age-encrypted `backend.hcl.sops` and decrypted locally with
 `scripts/decrypt-private-files.sh`.
 
 ### CI (merge request plan, manual apply)
 
-- `terraform_validate` — fmt + validate on every MR, on shared runners.
-- `terraform_plan` — full plan on every MR, on the self-hosted runner (it can
+- `terraform_validate`, fmt + validate on every MR, on shared runners.
+- `terraform_plan`, full plan on every MR, on the self-hosted runner (it can
   reach the Proxmox endpoints); the MR widget shows the resource change counts.
-- `terraform_apply` — manual job on `main`.
+- `terraform_apply`, manual job on `main`.
 
 `terraform_plan`/`terraform_apply` clone the private secrets repo with the
 job token, link `terraform.tfvars.sops` in via `scripts/link-private-files.sh`,
 and decrypt it with `scripts/decrypt-private-files.sh`. Required setup in GitLab:
 
-- **Settings → CI/CD → Variables**: `SOPS_AGE_KEY` — type **Variable**,
+- **Settings → CI/CD → Variables**: `SOPS_AGE_KEY` - type **Variable**,
   masked, the private half of an age keypair whose public half is a recipient
   in `private/secrets/.sops.yaml`. Do not mark it protected, or MR pipelines
   will not receive it. (Skip this if it's already set at the `cf_homelab`
@@ -161,17 +180,21 @@ The hooks are local to each clone. They are versioned in this repository, but
 Git will not use them until `core.hooksPath` is configured.
 
 `pre-commit` blocks accidental commits of Terraform runtime/private files such
-as `*.tfvars`, `*.tfvars.sops`, `backend.hcl`, `backend.hcl.sops`, `*.tfstate`,
-plans, crash logs, `.terraform/`, private helper backups, and suspicious
-symlinks. It also scans staged content for obvious literal secret assignments.
+as `*.tfvars`, `*.tfvars.sops`, `backend.hcl`, `backend.hcl.sops`, plans, crash
+logs, `.terraform/`, private helper backups, and suspicious symlinks. It also
+scans staged content for obvious literal secret assignments. (`*.tfstate` is
+kept out of commits by `.gitignore`.)
 
 `pre-push` runs the local sanity checks:
 
 - Shows `git status --short --ignored`.
-- Verifies `terraform.tfvars.sops`, `backend.hcl.sops`, and `terraform.tfstate`
-  are linked from the private secrets repository.
+- Verifies `terraform.tfvars.sops` and `backend.hcl.sops` are linked from the
+  private secrets repository. (State is GitLab-managed remote, not a linked
+  local file.)
 - Fails if Terraform runtime/private files are tracked.
-- Runs `terraform fmt -check -recursive`.
+- Runs `terraform fmt -check` over git-tracked `*.tf`/`*.tfvars` files (a
+  recursive check would also flag the gitignored plaintext `terraform.tfvars`
+  decrypted from `terraform.tfvars.sops`, which SOPS leaves unformatted).
 
 If the private secrets repository is not at `../private/secrets`, set:
 

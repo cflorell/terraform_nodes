@@ -13,11 +13,14 @@ terraform {
   }
 }
 
+# insecure = false: Terraform verifies each host's Let's Encrypt cert (issued by
+# ansible_nodes via PVE-native ACME; endpoints are the cert FQDNs). See README
+# "Provider TLS" to revert a host to self-signed.
 provider "proxmox" {
   endpoint = var.proxmox_endpoint
   username = "root@pam"
   password = var.proxmox_password
-  insecure = true
+  insecure = false
 }
 
 provider "proxmox" {
@@ -25,7 +28,7 @@ provider "proxmox" {
   endpoint = var.proxmox2_endpoint
   username = "root@pam"
   password = var.proxmox_password
-  insecure = true
+  insecure = false
 }
 
 provider "proxmox" {
@@ -33,5 +36,5 @@ provider "proxmox" {
   endpoint = var.proxmox3_endpoint
   username = "root@pam"
   password = var.proxmox_password
-  insecure = true
+  insecure = false
 }

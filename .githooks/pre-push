@@ -65,13 +65,19 @@ fi
 if [[ "${SKIP_TERRAFORM_FMT_CHECK:-0}" == "1" ]]; then
   echo "Skipping Terraform format check because SKIP_TERRAFORM_FMT_CHECK=1"
 else
-  echo "== terraform fmt -check -recursive =="
+  echo "== terraform fmt -check (tracked files) =="
   if ! command -v terraform >/dev/null 2>&1; then
     echo "ERROR: terraform is not installed or not on PATH."
     echo "To bypass only this check once: SKIP_TERRAFORM_FMT_CHECK=1 git push"
     exit_status=1
   else
-    terraform fmt -check -recursive || exit_status=1
+    # Only check git-tracked files. A recursive check would also walk the
+    # gitignored plaintext terraform.tfvars (decrypted from terraform.tfvars.sops),
+    # which SOPS/age leaves unformatted and would fail the hook.
+    mapfile -d '' -t tf_files < <(git ls-files -z '*.tf' '*.tfvars' '*.tfvars.json')
+    if ((${#tf_files[@]} > 0)); then
+      terraform fmt -check -- "${tf_files[@]}" || exit_status=1
+    fi
   fi
 fi
 
