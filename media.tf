@@ -65,7 +65,7 @@ resource "proxmox_virtual_environment_container" "media" {
     enabled      = true
     firewall     = false
     host_managed = false
-    mac_address  = "bc:24:11:0c:1f:5c"
+    mac_address  = "BC:24:11:7F:67:73"
     mtu          = 0
     name         = "eth0"
     rate_limit   = 0
