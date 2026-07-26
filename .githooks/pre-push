@@ -12,6 +12,9 @@ echo "== git status --short --ignored =="
 git status --short --ignored
 echo
 
+# Patterns containing '*' match across directory separators in git pathspecs,
+# so those cover every Terraform project root. Literal names do not, and are
+# repeated with a '*/' prefix to reach infra/ and authentik/.
 tracked_private_files="$(
   git ls-files \
     '*.tfvars' \
@@ -20,12 +23,17 @@ tracked_private_files="$(
     '*.tfplan' \
     '*.plan' \
     'backend.hcl' \
+    '*/backend.hcl' \
     'backend.hcl.sops' \
+    '*/backend.hcl.sops' \
     '.terraform' \
+    '*/.terraform' \
     '*/.terraform/*' \
     '*.private-backup-*' \
     '.terraformrc' \
-    'terraform.rc'
+    '*/.terraformrc' \
+    'terraform.rc' \
+    '*/terraform.rc'
 )"
 
 if [[ -n "$tracked_private_files" ]]; then

@@ -77,7 +77,7 @@ scan_staged_content() {
   matches="$(
     git show ":$file" 2>/dev/null \
       | grep -Ein '(^|[[:space:]])(password|proxmox_token|vm_password|token|secret|api[_-]?key|access[_-]?key|secret[_-]?key|client[_-]?secret)[[:space:]]*=[[:space:]]*"[^"$][^"]*"|(endpoint|url)[[:space:]]*=[[:space:]]*"https?://(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)|terraform-token=[A-Za-z0-9]|PVEAPIToken=|BEGIN [A-Z ]*PRIVATE KEY' \
-      | grep -Eiv 'change-me|example|placeholder|\$\{|var\.' \
+      | grep -Eiv 'change-me|example|placeholder|\$\{|var\.|"<[^"]*>"' \
       || true
   )"
 

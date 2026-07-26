@@ -23,16 +23,22 @@ variables:
   TERRAFORM_PLAN_APPLY_VERSION: "1.15.8"
   SOPS_VERSION: "v3.13.2"
 
-# Files that actually affect `terraform plan`/`apply` output. Referenced via
-# YAML anchor from terraform_validate/plan/apply's rules so those jobs (and
-# terraform_apply's manual gate) aren't created at all for commits that don't
-# touch them (e.g. docs-only changes) - keeps the pipeline (and its badge)
-# green instead of parked on "manual".
-.terraform_changes: &terraform_changes
-  - "*.tf"
-  - "*.tfvars.example"
-  - ".terraform.lock.hcl"
-  - "user-data.yaml"
+# Files that actually affect `terraform plan`/`apply` output, per Terraform
+# project root. Referenced via YAML anchor from each project's validate/plan/
+# apply rules so those jobs (and the apply manual gate) aren't created at all
+# for commits that don't touch them (e.g. docs-only changes) - keeps the
+# pipeline (and its badge) green instead of parked on "manual".
+#
+# Splitting these is what keeps the two projects independent: an Authentik
+# object change never triggers an infrastructure plan, and an unreachable
+# Authentik never blocks one. scripts/** appears in both because
+# link-private-files.sh and decrypt-private-files.sh feed every project.
+.infra_changes: &infra_changes
+  - "infra/**/*"
+  - "scripts/**/*"
+
+.authentik_changes: &authentik_changes
+  - "authentik/**/*"
   - "scripts/**/*"
 
 sast:
@@ -102,9 +108,11 @@ parse-sast-results:
 # via scripts/link-private-files.sh, then decrypted from its SOPS/age-encrypted
 # form with scripts/decrypt-private-files.sh (see .tfvars_setup below).
 
+# TF_STATE_NAME is deliberately not defaulted here: each project sets its own
+# ("homelab" for infra/, "authentik" for authentik/) so a job can never fall
+# back to another project's state by omission.
 .terraform_remote_state:
   variables:
-    TF_STATE_NAME: homelab
     TF_HTTP_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}
     TF_HTTP_LOCK_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}/lock
     TF_HTTP_UNLOCK_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}/lock
@@ -134,60 +142,155 @@ parse-sast-results:
     - ./scripts/link-private-files.sh --secrets-dir secrets
     - ./scripts/decrypt-private-files.sh
 
-terraform_validate:
+# Formatting is checked once for the whole repo rather than per project, so a
+# stray .tf outside infra/ and authentik/ is still caught.
+terraform_fmt:
   stage: validate
   image:
     name: hashicorp/terraform:1.15
     entrypoint: [""]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes: *terraform_changes
+      changes: *infra_changes
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *authentik_changes
     - if: $CI_COMMIT_BRANCH == "main"
-      changes: *terraform_changes
+      changes: *infra_changes
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes: *authentik_changes
   script:
     - terraform fmt -check -recursive -diff
+
+terraform_validate_infra:
+  stage: validate
+  image:
+    name: hashicorp/terraform:1.15
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *infra_changes
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes: *infra_changes
+  script:
+    - cd infra
+    - terraform init -backend=false
+    - terraform validate
+
+terraform_validate_authentik:
+  stage: validate
+  image:
+    name: hashicorp/terraform:1.15
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *authentik_changes
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes: *authentik_changes
+  script:
+    - cd authentik
     - terraform init -backend=false
     - terraform validate
 
 # Runs on the k8s-executor runner: it needs network access to the Proxmox
 # endpoints (verified reachable from pods), terraform/jq/sops installed by
 # .tfvars_setup above.
-terraform_plan:
+terraform_plan_infra:
   stage: plan
   extends:
     - .terraform_remote_state
     - .tfvars_setup
   tags:
     - k8s
+  variables:
+    TF_STATE_NAME: homelab
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes: *terraform_changes
+      changes: *infra_changes
     - if: $CI_COMMIT_BRANCH == "main"
-      changes: *terraform_changes
+      changes: *infra_changes
   script:
     - terraform version
+    - cd infra
     - terraform init
     - terraform plan -lock=false -var-file="terraform.tfvars" -out=homelab.tfplan
     - |
       terraform show -json homelab.tfplan | jq -r '([.resource_changes[]?.change.actions?] | flatten) | {create: (map(select(.=="create")) | length), update: (map(select(.=="update")) | length), delete: (map(select(.=="delete")) | length)}' > tfplan.json
   artifacts:
     reports:
-      terraform: tfplan.json
+      terraform: infra/tfplan.json
     expire_in: 1 week
 
-terraform_apply:
+terraform_apply_infra:
   stage: apply
   extends:
     - .terraform_remote_state
     - .tfvars_setup
   tags:
     - k8s
+  variables:
+    TF_STATE_NAME: homelab
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-      changes: *terraform_changes
+      changes: *infra_changes
       when: manual
   script:
+    - cd infra
     - terraform init
     - terraform apply -auto-approve -var-file="terraform.tfvars"
   environment:
     name: homelab
+
+# The authentik project configures a running service rather than provisioning
+# it, so these jobs need Authentik reachable at var.authentik_url and its
+# secrets present in the private repo. Both arrive with the Authentik
+# Terraform configuration itself; until then, set the project variable
+# AUTHENTIK_TF_ENABLED to "true" to switch them on.
+terraform_plan_authentik:
+  stage: plan
+  extends:
+    - .terraform_remote_state
+    - .tfvars_setup
+  tags:
+    - k8s
+  variables:
+    TF_STATE_NAME: authentik
+  rules:
+    - if: $AUTHENTIK_TF_ENABLED != "true"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *authentik_changes
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes: *authentik_changes
+  script:
+    - terraform version
+    - cd authentik
+    - terraform init
+    - terraform plan -lock=false -var-file="terraform.tfvars" -out=authentik.tfplan
+    - |
+      terraform show -json authentik.tfplan | jq -r '([.resource_changes[]?.change.actions?] | flatten) | {create: (map(select(.=="create")) | length), update: (map(select(.=="update")) | length), delete: (map(select(.=="delete")) | length)}' > tfplan.json
+  artifacts:
+    reports:
+      terraform: authentik/tfplan.json
+    expire_in: 1 week
+
+terraform_apply_authentik:
+  stage: apply
+  extends:
+    - .terraform_remote_state
+    - .tfvars_setup
+  tags:
+    - k8s
+  variables:
+    TF_STATE_NAME: authentik
+  rules:
+    - if: $AUTHENTIK_TF_ENABLED != "true"
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes: *authentik_changes
+      when: manual
+  script:
+    - cd authentik
+    - terraform init
+    - terraform apply -auto-approve -var-file="terraform.tfvars"
+  environment:
+    name: authentik

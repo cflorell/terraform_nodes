@@ -1,0 +1,12 @@
+# Reachable from wherever Terraform runs. The Caddy hostname gives a valid
+# certificate; the LXC address (http://<ip>:9000) avoids depending on public DNS
+# resolving back inward, which matters for CI running inside the cluster.
+authentik_url = "https://auth.example.com"
+
+# Created by AUTHENTIK_BOOTSTRAP_TOKEN in ansible_nodes' authentik env template.
+# Confirm it appears under Directory > Tokens after deploying that change; on an
+# already-initialized instance the bootstrap variable may not take effect, in
+# which case create the token once in the UI and store it here.
+authentik_token = "changeme"
+
+porkbun_domain = "example.com"
