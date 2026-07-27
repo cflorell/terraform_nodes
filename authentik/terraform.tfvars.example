@@ -10,3 +10,10 @@ authentik_url = "https://auth.example.com"
 authentik_token = "changeme"
 
 porkbun_domain = "example.com"
+
+# Immich OIDC client credentials. The same pair must be set as
+# immich_oidc_client_id / immich_oidc_client_secret in ansible_nodes'
+# secrets.sops.yaml, which is what renders Immich's own config.
+# Generate with: openssl rand -hex 32
+immich_oidc_client_id     = "changeme"
+immich_oidc_client_secret = "changeme"

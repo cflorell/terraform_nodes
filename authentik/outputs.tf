@@ -25,6 +25,11 @@ output "group_ids" {
   }
 }
 
+output "immich_oidc_issuer_url" {
+  description = "Issuer URL for Immich's OAuth settings. Trailing slash is required."
+  value       = "${var.authentik_url}/application/o/${authentik_application.immich.slug}/"
+}
+
 output "forward_auth_applications" {
   description = "External host per protected application. Each must match a caddy_reverse_proxies entry with forward_auth: true in ansible_nodes."
   value       = { for k, v in authentik_provider_proxy.forward_auth : k => v.external_host }

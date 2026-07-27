@@ -14,6 +14,17 @@ variable "porkbun_domain" {
   type        = string
 }
 
+variable "immich_oidc_client_id" {
+  description = "OIDC client ID for Immich. Must match immich_oidc_client_id in ansible_nodes' secrets.sops.yaml."
+  type        = string
+}
+
+variable "immich_oidc_client_secret" {
+  description = "OIDC client secret for Immich. Must match immich_oidc_client_secret in ansible_nodes' secrets.sops.yaml."
+  type        = string
+  sensitive   = true
+}
+
 variable "authorization_flow_slug" {
   description = "Built-in flow proxy and OIDC providers use to authorize a request. Implicit consent skips the per-application approval prompt, which suits a single-household deployment."
   type        = string
