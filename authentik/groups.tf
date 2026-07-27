@@ -1,6 +1,6 @@
 # Authorization groups bound to applications in proxy_providers.tf.
 resource "authentik_group" "homelab_users" {
-  name = "homelab-users"
+  name  = "homelab-users"
   users = [for u in authentik_user.homelab : tonumber(u.id)]
 }
 
