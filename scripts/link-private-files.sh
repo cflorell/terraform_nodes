@@ -20,8 +20,15 @@ Options:
 Private repo layout:
   secrets/
     terraform_nodes/
-      terraform.tfvars.sops
-      backend.hcl.sops
+      terraform.tfvars.sops            (infra, flat path predating the split)
+      backend.hcl.sops                 (infra, flat path predating the split)
+      authentik/terraform.tfvars.sops
+      authentik/backend.hcl.sops
+
+  Each Terraform project in this repo (infra/, authentik/) carries its own
+  tfvars and backend config. Sources are looked up at the matching relative
+  path under terraform_nodes/; for infra/ the pre-split flat paths above are
+  still accepted, so the secrets repo needs no reorganization.
 
 Examples:
   HOMELAB_SECRETS_DIR=../private/secrets scripts/link-private-files.sh --adopt
@@ -131,16 +138,68 @@ elif [[ -d "$secrets_dir/$repo_name" ]]; then
   secrets_project_dir="$secrets_dir/$repo_name"
 elif [[ -d "$secrets_dir/$legacy_repo_name" ]]; then
   secrets_project_dir="$secrets_dir/$legacy_repo_name"
-elif [[ -e "$secrets_dir/terraform.tfvars.sops" ]]; then
+elif [[ -e "$secrets_dir/terraform.tfvars.sops" || -e "$secrets_dir/infra/terraform.tfvars.sops" ]]; then
   secrets_project_dir="$secrets_dir"
 else
   secrets_project_dir="$secrets_dir/$normalized_repo_name"
 fi
 
+# Repo-relative private files, one set per Terraform project root.
 private_files=(
-  "terraform.tfvars.sops"
-  "backend.hcl.sops"
+  "infra/terraform.tfvars.sops"
+  "infra/backend.hcl.sops"
+  "authentik/terraform.tfvars.sops"
+  "authentik/backend.hcl.sops"
 )
+
+# Files whose private source may legitimately not exist yet. The authentik
+# project's secrets are created when its Terraform configuration lands; until
+# then a missing source is reported and skipped rather than failing the run.
+optional_files=(
+  "authentik/terraform.tfvars.sops"
+  "authentik/backend.hcl.sops"
+)
+
+# Paths used in the secrets repo before infra/ and authentik/ were split into
+# separate roots. Honoured so existing checkouts keep working unchanged.
+legacy_source_for() {
+  case "$1" in
+    "infra/terraform.tfvars.sops") printf '%s\n' "terraform.tfvars.sops" ;;
+    "infra/backend.hcl.sops") printf '%s\n' "backend.hcl.sops" ;;
+    *) printf '%s\n' "" ;;
+  esac
+}
+
+is_optional() {
+  local candidate="$1"
+  local entry
+  for entry in "${optional_files[@]}"; do
+    if [[ "$entry" == "$candidate" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Prefers the per-project path, falls back to the legacy flat path, and
+# otherwise returns the per-project path so --adopt writes the new layout.
+resolve_source() {
+  local relpath="$1"
+  local legacy
+
+  if [[ -e "$secrets_project_dir/$relpath" ]]; then
+    printf '%s\n' "$secrets_project_dir/$relpath"
+    return 0
+  fi
+
+  legacy="$(legacy_source_for "$relpath")"
+  if [[ -n "$legacy" && -e "$secrets_project_dir/$legacy" ]]; then
+    printf '%s\n' "$secrets_project_dir/$legacy"
+    return 0
+  fi
+
+  printf '%s\n' "$secrets_project_dir/$relpath"
+}
 
 run() {
   if $dry_run; then
@@ -174,11 +233,16 @@ backup_path() {
 errors=0
 
 for relpath in "${private_files[@]}"; do
-  source_path="$secrets_project_dir/$relpath"
+  source_path="$(resolve_source "$relpath")"
   target_path="$repo_root/$relpath"
 
   if $check_only; then
     if [[ ! -e "$source_path" ]]; then
+      if is_optional "$relpath"; then
+        echo "SKIP $relpath (optional, private source not created yet)"
+        continue
+      fi
+
       echo "MISSING source: $source_path" >&2
       errors=$((errors + 1))
       continue
@@ -207,6 +271,9 @@ for relpath in "${private_files[@]}"; do
       echo "Adopting $relpath into private repo"
       ensure_parent "$source_path"
       run cp -p -- "$target_path" "$source_path"
+    elif is_optional "$relpath"; then
+      echo "Skipping $relpath (optional, private source not created yet)"
+      continue
     else
       echo "ERROR: missing private source: $source_path" >&2
       echo "       create it there, or rerun with --adopt if $target_path is the current source of truth" >&2

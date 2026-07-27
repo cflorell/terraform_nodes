@@ -1,0 +1,34 @@
+# Reachable from wherever Terraform runs. The Caddy hostname gives a valid
+# certificate; the LXC address (http://<ip>:9000) avoids depending on public DNS
+# resolving back inward, which matters for CI running inside the cluster.
+authentik_url = "https://auth.example.com"
+
+# Created by AUTHENTIK_BOOTSTRAP_TOKEN in ansible_nodes' authentik env template.
+# Confirm it appears under Directory > Tokens after deploying that change; on an
+# already-initialized instance the bootstrap variable may not take effect, in
+# which case create the token once in the UI and store it here.
+authentik_token = "changeme"
+
+porkbun_domain = "example.com"
+
+# People allowed into homelab applications. The map key is the Authentik
+# username. Membership of homelab-users is authoritative, so an account left out
+# here is removed from the group on the next apply, including accounts added
+# through the UI.
+#
+# The address must match the existing account in each application. OIDC
+# auto-registration matches on email, so a mismatch silently creates a second,
+# empty account.
+homelab_users = {
+  alice = {
+    name  = "Alice Example"
+    email = "alice@example.com"
+  }
+}
+
+# Immich OIDC client credentials. The same pair must be set as
+# immich_oidc_client_id / immich_oidc_client_secret in ansible_nodes'
+# secrets.sops.yaml, which is what renders Immich's own config.
+# Generate with: openssl rand -hex 32
+immich_oidc_client_id     = "changeme"
+immich_oidc_client_secret = "changeme"
