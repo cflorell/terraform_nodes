@@ -11,6 +11,21 @@ authentik_token = "changeme"
 
 porkbun_domain = "example.com"
 
+# People allowed into homelab applications. The map key is the Authentik
+# username. Membership of homelab-users is authoritative, so an account left out
+# here is removed from the group on the next apply, including accounts added
+# through the UI.
+#
+# The address must match the existing account in each application. OIDC
+# auto-registration matches on email, so a mismatch silently creates a second,
+# empty account.
+homelab_users = {
+  alice = {
+    name  = "Alice Example"
+    email = "alice@example.com"
+  }
+}
+
 # Immich OIDC client credentials. The same pair must be set as
 # immich_oidc_client_id / immich_oidc_client_secret in ansible_nodes'
 # secrets.sops.yaml, which is what renders Immich's own config.
