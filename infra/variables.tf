@@ -119,3 +119,13 @@ variable "kubernetes_lxc_template_file_id" {
   type        = string
   default     = "local:vztmpl/debian-13-standard_13.1-2_amd64.tar.zst"
 }
+
+variable "llm_lxc_template_file_id" {
+  description = <<-EOT
+    LXC template used to create the llm container. Must already exist on the
+    Proxmox node the container is created on (proxmox1); download it there with
+    `pveam update && pveam download local <template>`.
+  EOT
+  type        = string
+  default     = "local:vztmpl/debian-13-standard_13.1-2_amd64.tar.zst"
+}

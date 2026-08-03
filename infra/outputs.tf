@@ -42,6 +42,12 @@ locals {
       ansible_port = 22
     }
 
+    llm = {
+      ansible_host = proxmox_virtual_environment_container.llm.ipv4["eth0"]
+      ansible_user = "root"
+      ansible_port = 22
+    }
+
     runner = {
       ansible_host = var.runner_vm_ipv4_address != "dhcp" ? split("/", var.runner_vm_ipv4_address)[0] : try(
         flatten([

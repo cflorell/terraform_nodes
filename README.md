@@ -15,6 +15,17 @@ state, provider set, tfvars and backend configuration:
 `infra/` keeps one `.tf` per logical service or node group. `authentik/`
 holds groups, proxy and OIDC providers, applications and policy bindings.
 
+Most containers in `infra/` were created by hand and imported afterwards,
+which is why they carry an empty `template_file_id` and no `user_account`
+block: the provider only refreshes what already exists. `llm.tf` is created by
+Terraform outright, so it names an LXC template
+(`var.llm_lxc_template_file_id`) and sets the root credentials Ansible
+connects with. That template has to exist on the node the container is created
+on already; download it there with
+`pveam update && pveam download local <template>`. Containers take their
+address over DHCP, so a new one also needs a reservation for its declared MAC
+address on the OPNsense side before Ansible can reach it at a fixed IP.
+
 They are separate because they operate at different layers. `infra/`
 provisions machines; `authentik/` configures a service that Ansible has
 already deployed onto one of them. Keeping the state and CI jobs apart means
