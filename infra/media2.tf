@@ -28,7 +28,7 @@ resource "proxmox_virtual_environment_container" "media2" {
     mount_options = []
     quota         = false
     replicate     = false
-    size          = 24
+    size          = 32
   }
 
   features {
