@@ -1,7 +1,7 @@
 resource "proxmox_virtual_environment_container" "llm" {
   description           = "LLM front end (Open WebUI + SearXNG) managed by Terraform\n"
   environment_variables = {}
-  node_name             = "proxmox"
+  node_name             = "proxmox2"
   protection            = false
   start_on_boot         = true
   started               = true
@@ -9,12 +9,6 @@ resource "proxmox_virtual_environment_container" "llm" {
   template              = false
   unprivileged          = false
   vm_id                 = 109
-
-  console {
-    enabled   = true
-    tty_count = 2
-    type      = "tty"
-  }
 
   cpu {
     architecture = "amd64"
@@ -90,11 +84,14 @@ resource "proxmox_virtual_environment_container" "llm" {
   lifecycle {
     # The provider does not round-trip these imported/default fields cleanly.
     ignore_changes = [
+      environment_variables,
+      operating_system[0].template_file_id,
       timeout_clone,
       timeout_create,
       timeout_delete,
       timeout_start,
       timeout_update,
+      initialization[0].user_account,
       vm_id,
     ]
 
