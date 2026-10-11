@@ -51,7 +51,7 @@ resource "proxmox_virtual_environment_vm" "haosova" {
     limit      = 0
     numa       = false
     sockets    = 1
-    type       = "qemu64"
+    type       = "host"
   }
 
   disk {

@@ -31,7 +31,7 @@ resource "proxmox_virtual_environment_container" "llm" {
     fuse    = true
     keyctl  = false
     mknod   = false
-    mount   = []
+    mount   = ["nfs"]
     nesting = true
   }
 
