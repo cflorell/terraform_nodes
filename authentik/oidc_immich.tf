@@ -69,10 +69,24 @@ resource "authentik_application" "immich" {
   protocol_provider = authentik_provider_oauth2.immich.id
   meta_description  = "Photo and video library"
   meta_launch_url   = "https://immich.${var.porkbun_domain}"
+
+  # Multiple group bindings are alternatives, not a conjunction. Stated
+  # explicitly so adding a family group cannot accidentally narrow access to
+  # the intersection of both groups if the provider default changes.
+  policy_engine_mode = "any"
 }
 
 resource "authentik_policy_binding" "immich_group" {
   target = authentik_application.immich.uuid
   group  = authentik_group.homelab_users.id
   order  = 0
+}
+
+# Alternative binding for shared family accounts. With policy_engine_mode
+# "any", members of either group can sign in; family members never join
+# homelab-users and therefore gain no access through that group.
+resource "authentik_policy_binding" "immich_family" {
+  target = authentik_application.immich.uuid
+  group  = authentik_group.immich_family.id
+  order  = 10
 }

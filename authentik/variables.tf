@@ -23,6 +23,15 @@ variable "homelab_users" {
   default = {}
 }
 
+variable "immich_family_users" {
+  description = "Shared read-only Immich accounts, keyed by Authentik username. Kept separate from homelab_users so family members do not inherit access to applications bound to that group. The address must match the Immich user created for the account: OIDC links on email, and a mismatch creates a second, empty account."
+  type = map(object({
+    name  = string
+    email = string
+  }))
+  default = {}
+}
+
 variable "immich_oidc_client_id" {
   description = "OIDC client ID for Immich. Must match immich_oidc_client_id in ansible_nodes' secrets.sops.yaml."
   type        = string

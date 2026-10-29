@@ -22,6 +22,7 @@ output "group_ids" {
   value = {
     homelab_users  = authentik_group.homelab_users.id
     homelab_admins = authentik_group.homelab_admins.id
+    immich_family  = authentik_group.immich_family.id
   }
 }
 
