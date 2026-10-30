@@ -21,7 +21,7 @@ resource "proxmox_virtual_environment_vm" "runner" {
   machine                              = "q35"
   migrate                              = false
   name                                 = "runner"
-  node_name                            = "proxmox"
+  node_name                            = "proxmox3"
   on_boot                              = true
   protection                           = true
   purge_on_destroy                     = true
