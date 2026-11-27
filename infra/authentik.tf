@@ -28,7 +28,7 @@ resource "proxmox_virtual_environment_container" "authentik" {
     mount_options = []
     quota         = false
     replicate     = false
-    size          = 8
+    size          = 16
   }
 
   features {

@@ -97,6 +97,11 @@ resource "proxmox_virtual_environment_vm" "haosova" {
     usb3 = true
   }
 
+  usb {
+    host = "303a:831a"
+    usb3 = false
+  }
+
   lifecycle {
     prevent_destroy = true
   }

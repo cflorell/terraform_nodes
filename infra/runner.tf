@@ -6,7 +6,7 @@ resource "proxmox_download_file" "runner_cloud_image" {
   content_type = "import"
   datastore_id = var.runner_vm_cloud_image_datastore_id
   file_name    = var.runner_vm_cloud_image_file_name
-  node_name    = "proxmox"
+  node_name    = "proxmox3"
   url          = var.runner_vm_cloud_image_url
   overwrite    = false
 }
@@ -108,7 +108,7 @@ resource "proxmox_virtual_environment_vm" "runner" {
   }
 
   memory {
-    dedicated      = 8192
+    dedicated      = 12288
     floating       = 0
     keep_hugepages = false
     shared         = 0
